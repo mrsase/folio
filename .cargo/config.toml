@@ -1,0 +1,4 @@
+# Six of eight logical cores: fast builds, still leaves headroom for
+# interactive work on this machine.
+[build]
+jobs = 6
