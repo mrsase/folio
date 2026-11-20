@@ -1,8 +1,8 @@
 # Release record — v0.1.0
 
 **Repository:** <https://github.com/mrsase/folio> (public, MIT)
-**Tag:** `v0.1.0` (pending)
-**Commit:** the `v0.1.0` tag; CI run 44823618324 validated `fcff2e5`, with only documentation commits after it
+**Tag:** `v0.1.0`
+**Commit:** the `v0.1.0` tag (code at `fcff2e5`, documentation after it)
 **Date:** 2026-11-21
 
 ## Gate results at the tagged commit
@@ -13,7 +13,7 @@
 | `cargo clippy --workspace --all-targets -- -D warnings` | core clean; workspace gate on CI |
 | `cargo test --workspace` | core 85/85 locally; workspace gate on CI |
 | `cargo build --release -p folio-app --locked` | ✅ 7 m 30 s first build, 2 m 19 s rebuild; 26,929,828 bytes |
-| GitHub Actions `CI` | ✅ [run 44823618324](https://github.com/mrsase/folio/actions/runs/44823618324) — 27 m 41 s on `macos-latest` (arm64); fmt, clippy, tests and release build all green |
+| GitHub Actions `CI` | ✅ [run 44823618324](https://github.com/mrsase/folio/actions/runs/44823618324) (code) and [run 44827776596](https://github.com/mrsase/folio/actions/runs/44827776596) (docs commit, 14 m 29 s) — fmt, clippy, tests and release build green on both |
 | Packaging | ✅ `Folio-0.1.0-macos.zip` (11 MB), ad-hoc signed, x86_64 |
 | Data hygiene | ✅ 88 tracked files; no `target/`, session files, or `~/Library` content |
 

@@ -72,7 +72,7 @@ are labelled as such.
 | A7 save safety | go | core tests + BOM/CRLF UI proof + conflict dialog |
 | A8 reader parity/session | go | tree/tabs/outline/find/palette/live reload/restore |
 | A9 settings | go with a stated limit | theme/font/root persist; settings controls driven; reduced motion inherited at init; live macOS appearance changes need a toggle/relaunch |
-| A10 ship | pending tag/release | repo and CI green; tag and release assets are the final step |
+| A10 ship | go | public repo, topics, MIT/notices, green CI on the tagged code, `v0.1.0` tag and release assets (zip + notes) |
 
 **Verdict: GO for v0.1.0 only after CI is green on the tagged commit and the
 remaining manual checks (Save As completion, drag-drop, Finder reveal) are
