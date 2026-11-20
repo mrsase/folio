@@ -140,7 +140,7 @@ proof.
 | Release binary | `stat -f %z target/release/folio-app` | 26,929,828 bytes (25.7 MiB) |
 | Startup | `FOLIO_TRACE=1`, release | 782–988 ms (2 KB doc); 693 ms (2 MiB preview) |
 | Packaging | `./scripts/package.sh 0.1.0` | ✅ `target/Folio-0.1.0-macos.zip`, 11 MB, ad-hoc signed x86_64 |
-| Workspace gate | `cargo test --workspace`, clippy, release | ✅ CI [44823618324](https://github.com/mrsase/folio/actions/runs/44823618324) on `fcff2e5` (27 m 41 s) and [44827776596](https://github.com/mrsase/folio/actions/runs/44827776596) on the docs commit (14 m 29 s); all steps green |
+| Workspace gate | `cargo test --workspace`, clippy, release | ✅ CI [44823618324](https://github.com/mrsase/folio/actions/runs/44823618324) on `fcff2e5` (27 m 41 s) [44827776596](https://github.com/mrsase/folio/actions/runs/44827776596) (14 m 29 s) and [44829851350](https://github.com/mrsase/folio/actions/runs/44829851350) on the tagged commit `8093ca9` (3 m 51 s); all steps green |
 
 The first CI run failed on four clippy lints (two closures, one `contains`, one
 collapsible `if`, one boolean expression), all fixed in `d78dfa3`/`fcff2e5`.

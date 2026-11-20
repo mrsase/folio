@@ -18,7 +18,7 @@ you did not edit.
 
 ## Status
 
-v0.1.0. The proof of concept remains readable at tag `poc-archive` (branch
+v0.1.0 — [download the release](https://github.com/mrsase/folio/releases/tag/v0.1.0). The proof of concept remains readable at tag `poc-archive` (branch
 `poc`); the product is a workspace with a pure-Rust core and a GPUI app.
 
 ## Build and run
