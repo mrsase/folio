@@ -57,7 +57,9 @@ Saving:
    original ending when that line is unchanged, otherwise the dominant ending
    (common prefix/suffix line matching, so untouched head and tail lines keep
    their exact terminators even in mixed-ending files); emit the final
-   terminator only when the buffer ends with a newline or the original had one.
+   terminator exactly when the buffer ends with a newline. A clean buffer is
+   never rewritten, so an untouched file keeps its original trailing-newline
+   state; an edit that adds or removes the final newline is respected.
 3. Run the atomic write in §2.
 
 This preserves BOM, LF vs CRLF, lone CR, trailing-newline presence, and
@@ -183,4 +185,7 @@ but it exercises the same ordering.
 - The PoC's checkbox bug is fixed by construction and covered by tests.
 - A file with mixed line endings is preserved where untouched; edited lines use
   the dominant style. This is stated in the README limits.
+- Ownership and Unix mode are preserved; extended attributes (Finder tags,
+  quarantine flags) and ACLs are not copied to the replacement inode. Stated in
+  the README limits rather than claimed.
 - No backup files, no journals, no hidden version history in v1.
