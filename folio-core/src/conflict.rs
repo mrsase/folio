@@ -112,6 +112,18 @@ mod tests {
     }
 
     #[test]
+    fn same_size_with_a_new_mtime_is_modified() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("a.md");
+        fs::write(&path, "# hi").unwrap();
+        let recorded = stamp(&path);
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(&path, "# hi").unwrap();
+        let meta = fs::metadata(&path).unwrap();
+        assert_eq!(compare(recorded, Some(&meta)), Some(Conflict::Modified));
+    }
+
+    #[test]
     fn deletion_and_creation_are_distinct() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("a.md");

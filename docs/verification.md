@@ -95,7 +95,7 @@ locally (see the resource note below).
 
 | Check | Command / evidence | Result |
 | --- | --- | --- |
-| Core tests | `cargo test -p folio-core` | **77 unit + 7 integration = 84**, 0 failed |
+| Core tests | `cargo test -p folio-core` | **78 unit + 7 integration = 85**, 0 failed |
 | App build | `cargo build -p folio-app` | ✅ exit 0, no warnings in the final run |
 | Format | `cargo fmt --all` | ✅ applied; `--check` is a CI gate |
 | Lint | `cargo clippy --workspace --all-targets -- -D warnings` | run in phase 6 / CI |

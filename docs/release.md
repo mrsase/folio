@@ -11,7 +11,7 @@
 | --- | --- |
 | `cargo fmt --all --check` | ✅ clean at `ce6a80c` |
 | `cargo clippy --workspace --all-targets -- -D warnings` | core clean; workspace gate on CI |
-| `cargo test --workspace` | core 84/84 locally; workspace gate on CI |
+| `cargo test --workspace` | core 85/85 locally; workspace gate on CI |
 | `cargo build --release -p folio-app --locked` | ✅ 7 m 30 s locally (thin LTO), 26,888,020 bytes |
 | GitHub Actions `CI` | pending |
 | Data hygiene | no `target/`, session files, or `~/Library` content tracked |

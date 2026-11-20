@@ -84,6 +84,13 @@ shell, then pressed `⌘S`.
 Reload / Overwrite / Save As… / Cancel. Screenshot: `conflict.png`. The original
 external content was still on disk when the app was closed.
 
+## 5b. Undo
+
+In Source mode, pasting `ZZZ` and pressing `⌘Z` removed the inserted text. The
+dirty dot remained, by design: dirty is `revision != saved_revision`, so undoing
+to the saved text is conservatively reported as dirty (ADR 0001). No save was
+performed in that run.
+
 ## 6. Unsaved guards
 
 - Closing a dirty tab (the `×`) opened “Unsaved changes” with Save / Discard /
