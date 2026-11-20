@@ -217,6 +217,16 @@ impl FileTree {
     /// kept, so an active filter can prune directories with no matches.
     fn walk(&mut self, dir: &Path, depth: usize, needle: Option<&str>) -> bool {
         let Some(mut entries) = read_sorted(dir, self.show_hidden) else {
+            if depth > 0 {
+                self.rows.push(Node {
+                    path: dir.to_path_buf(),
+                    name: "(unreadable)".to_string(),
+                    depth,
+                    is_dir: false,
+                    expanded: false,
+                });
+                return true;
+            }
             return false;
         };
         entries.retain(|entry| !should_skip(&entry.path));
@@ -396,6 +406,24 @@ mod tests {
         let row = tree.reveal(&root.join("a/b/c/target.md")).unwrap();
         assert_eq!(tree.row(row).unwrap().name, "target.md");
         assert_eq!(tree.row(row).unwrap().depth, 3);
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_unreadable_directory_is_reported_inline() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempdir("unreadable");
+        let locked = root.join("locked");
+        fs::create_dir(&locked).unwrap();
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+        let mut tree = FileTree::new();
+        tree.set_root(&root);
+        let row = tree.index_of(&locked).unwrap();
+        tree.toggle_row(row);
+        let names: Vec<_> = tree.rows().iter().map(|row| row.name.as_str()).collect();
+        assert!(names.contains(&"(unreadable)"), "{names:?}");
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
         fs::remove_dir_all(root).ok();
     }
 

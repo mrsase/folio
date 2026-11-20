@@ -482,7 +482,7 @@ impl Folio {
     fn files_changed(&mut self, paths: Vec<PathBuf>, cx: &mut Context<Self>) {
         let mut changed = false;
         for tab in &mut self.tabs {
-            if !paths.iter().any(|path| *path == tab.path) {
+            if !paths.contains(&tab.path) {
                 continue;
             }
             if tab.is_dirty() {
@@ -510,10 +510,6 @@ impl Folio {
 
     pub fn active_tab(&self) -> Option<&Tab> {
         self.active.and_then(|index| self.tabs.get(index))
-    }
-
-    pub fn active_tab_mut(&mut self) -> Option<&mut Tab> {
-        self.active.and_then(|index| self.tabs.get_mut(index))
     }
 
     pub fn open_path(&mut self, path: &Path, cx: &mut Context<Self>) {
@@ -545,6 +541,7 @@ impl Folio {
     }
 
     pub fn open_root(&mut self, root: PathBuf, cx: &mut Context<Self>) {
+        self.cancel_scan();
         let root = paths::canonical(&root);
         if !root.is_dir() {
             self.notice = Some(format!("Not a folder: {}", paths::display(&root, None)));
@@ -617,15 +614,21 @@ impl Folio {
     }
 
     pub fn reload_active(&mut self, cx: &mut Context<Self>) {
-        let Some(tab) = self.active_tab_mut() else {
+        let Some(index) = self.active else {
             return;
         };
-        tab.needs_reload = true;
+        if self.tabs.get(index).is_some_and(Tab::is_dirty) {
+            self.notice = Some("Save or discard your edits before reloading.".to_string());
+            cx.notify();
+            return;
+        }
+        if let Some(tab) = self.tabs.get_mut(index) {
+            tab.needs_reload = true;
+        }
         cx.notify();
     }
 
     pub fn toggle_task(&mut self, offset: usize, checked: bool, cx: &mut Context<Self>) {
-        trace(|| format!("task toggle at {offset}, checked={checked}"));
         let index = match self.active {
             Some(index) => index,
             None => return,
@@ -637,36 +640,50 @@ impl Folio {
             let Some(doc) = tab.doc.as_mut() else {
                 return;
             };
-            // The renderer reports the desired state; set the marker explicitly.
-            let Some(marker) = folio_core::checkbox::checkbox_marker_at(&doc.text, offset) else {
-                trace(|| format!("no checkbox marker at {offset}"));
-                return;
-            };
-            trace(|| format!("checkbox marker at {marker}"));
-            folio_core::checkbox::set_checkbox(&mut doc.text, marker, checked);
-            doc.bump_revision();
-            doc.save()
+            if !doc.can_write() {
+                None
+            } else {
+                let Some(marker) = folio_core::checkbox::checkbox_marker_at(&doc.text, offset)
+                else {
+                    return;
+                };
+                if !folio_core::checkbox::set_checkbox(&mut doc.text, marker, checked) {
+                    return;
+                }
+                doc.bump_revision();
+                Some(doc.save())
+            }
         };
         match result {
-            Ok(_) => {
+            None => {
+                self.notice =
+                    Some("This file is read-only because it exceeds the write limit.".to_string());
+            }
+            Some(Ok(_)) => {
                 if let Some(tab) = self.tabs.get_mut(index) {
                     tab.refresh_view(cx);
                     tab.needs_sync = true;
                 }
                 self.persist_session(cx);
             }
-            Err(folio_core::document::SaveError::Conflict(conflict)) => {
+            Some(Err(folio_core::document::SaveError::Conflict(conflict))) => {
                 self.dialog = Some(Dialog::Conflict {
                     index,
                     conflict,
                     after: After::Nothing,
                 });
             }
-            Err(error) => {
+            Some(Err(error)) => {
                 self.notice = Some(format!("Could not save checkbox: {error}"));
             }
         }
         cx.notify();
+    }
+
+    fn cancel_scan(&mut self) {
+        if let Some(cancel) = self.scan_cancel.take() {
+            cancel.store(true, Ordering::Relaxed);
+        }
     }
 
     pub fn persist_session(&mut self, cx: &App) {
@@ -789,7 +806,21 @@ impl Folio {
         match after {
             After::Nothing => {}
             After::Close(index) => self.force_close_tab(index, cx),
-            After::Quit => cx.quit(),
+            After::Quit => {
+                let dirty: Vec<usize> = self
+                    .tabs
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, tab)| tab.is_dirty())
+                    .map(|(index, _)| index)
+                    .collect();
+                if dirty.is_empty() {
+                    self.persist_session(cx);
+                    cx.quit();
+                } else {
+                    self.quit_save_all(dirty, cx);
+                }
+            }
         }
     }
 
@@ -873,6 +904,7 @@ impl Folio {
     }
 
     pub fn request_quit(&mut self, cx: &mut Context<Self>) -> bool {
+        self.cancel_scan();
         let dirty: Vec<usize> = self
             .tabs
             .iter()
@@ -908,7 +940,7 @@ impl Folio {
         match after {
             After::Nothing => {}
             After::Close(index) => self.force_close_tab(index, cx),
-            After::Quit => cx.quit(),
+            After::Quit => self.after_saved(After::Quit, cx),
         }
         cx.notify();
     }
@@ -1135,6 +1167,7 @@ impl Folio {
         } else {
             String::new()
         };
+        let cursor = body.len();
         let mut doc = Document::new_untitled(path.clone(), body);
         let result = if exists {
             doc.save_as(path.clone())
@@ -1146,7 +1179,7 @@ impl Folio {
                 self.new_file = None;
                 self.session.note_file(&path);
                 self.pending_opens
-                    .push((path.clone(), ViewMode::Source, 0.0, 0));
+                    .push((path.clone(), ViewMode::Source, 0.0, cursor));
                 self.refocus_tree = true;
                 self.persist_session(cx);
                 cx.notify();
@@ -1441,11 +1474,11 @@ impl Folio {
         }
         if paths::looks_like_path(&query) {
             let home = std::env::var_os("HOME").map(PathBuf::from);
-            if let Ok(path) = paths::resolve(&query, root.as_deref(), home.as_deref()) {
-                if path.is_file() {
-                    self.open_path(&path, cx);
-                    return;
-                }
+            if let Ok(path) = paths::resolve(&query, root.as_deref(), home.as_deref())
+                && path.is_file()
+            {
+                self.open_path(&path, cx);
+                return;
             }
         }
         if let Some(path) = hit {

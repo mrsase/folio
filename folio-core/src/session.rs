@@ -242,6 +242,9 @@ mod tests {
             theme: ThemePreference::Dark,
             font_size: 18.0,
             remember_root: false,
+            sidebar_width: 320.0,
+            sidebar_visible: false,
+            outline_open: true,
             ..Session::default()
         };
         session.tabs.push(TabState {
@@ -270,6 +273,11 @@ mod tests {
         assert_eq!(loaded.theme, ThemePreference::Dark);
         assert_eq!(loaded.font_size, 18.0);
         assert!(!loaded.remember_root);
+        assert_eq!(loaded.sidebar_width, 320.0);
+        assert!(!loaded.sidebar_visible);
+        assert!(loaded.outline_open);
+        assert_eq!(loaded.window, session.window);
+        assert_eq!(loaded.recents.files, session.recents.files);
         assert_eq!(loaded.version, SESSION_VERSION);
     }
 

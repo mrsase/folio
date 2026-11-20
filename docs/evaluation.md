@@ -14,7 +14,7 @@ are labelled as such.
 | Source (core + app + tests) | **7,791 lines** | `wc -l folio-core/src/*.rs folio-core/tests/*.rs folio-app/src/*.rs folio-app/src/views/*.rs` |
 | `folio-core` | 3,364 lines | same, core only |
 | `folio-app` | 4,309 lines | same, app only |
-| Automated tests | **80** (75 unit + 5 integration) | `cargo test -p folio-core` |
+| Automated tests | **84** (77 unit + 7 integration) | `cargo test -p folio-core` |
 | Test time | 0.9 s | same |
 | Core compile/check | 2.5 s (`cargo clippy -p folio-core`) / 4.1 s test run | warm target |
 | App incremental build | 9–17 s | `cargo build -p folio-app` |

@@ -71,10 +71,10 @@ source surface; `TextViewState` remains the preview and the read mode.
 | New file | `⌘N` opens the in-app New File sheet (location, validated name, overwrite confirmation, optional frontmatter template), creates the file with `create_new`, then opens it in Source mode. |
 | Close tab | Unsaved guard: Save / Discard / Cancel. Cancel keeps the tab. |
 | Quit / close window | Same guard for all dirty tabs: Save All / Discard All / Cancel. Implemented with `Window::on_window_should_close` returning `false` until resolved. |
-| Outline | Rebuilt from the buffer after a 300 ms debounce (headless `outline()`), so it tracks unsaved edits. Clicking a heading moves the editor caret to that byte offset. Above 256 KiB the outline is not rebuilt (the preview cap) and says so. |
+| Outline | Rebuilt from the buffer after each change (headless `outline()`) for documents up to 256 KiB, so it tracks unsaved edits. Clicking a heading moves the editor caret to that byte offset. Above 256 KiB the outline is not rebuilt (the preview cap). |
 | Quick-open | Unchanged while editing: it opens another tab and never discards the current buffer. A dirty new file that has no path yet is not in quick-open; it stays as "Untitled" until saved. |
 | Live reload | Watcher events never overwrite a dirty buffer. A dirty tab whose file changed on disk gets a "changed on disk" banner; the save path then offers Reload / Overwrite / Save As (ADR 0003). A clean tab reloads in place. |
-| Checkbox write-back | Works in Preview and Source. It goes through the same conflict-checked atomic write. Not offered for non-UTF-8 files. |
+| Checkbox write-back | Works in Preview (read mode), through the same conflict-checked atomic write. Source mode edits the raw marker text; it does not render clickable boxes. Not offered for non-UTF-8 files. |
 
 ### Size policy
 

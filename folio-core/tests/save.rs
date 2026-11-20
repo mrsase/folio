@@ -81,3 +81,29 @@ fn utf8_bom_crlf_and_no_trailing_newline_round_trip_together() {
         b"\xEF\xBB\xBF# Title\r\n\r\nline one\r\nline two"
     );
 }
+
+#[test]
+fn new_file_creates_and_refuses_an_existing_target() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("fresh.md");
+    let mut document = Document::new_untitled(path.clone(), "# Fresh\n".to_string());
+    document.save().unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"# Fresh\n");
+
+    let mut second = Document::new_untitled(path.clone(), "# Other\n".to_string());
+    let error = second.save().unwrap_err();
+    assert!(matches!(error, SaveError::Conflict(_)), "{error:?}");
+    assert_eq!(fs::read(&path).unwrap(), b"# Fresh\n");
+}
+
+#[test]
+fn a_clean_save_still_detects_an_external_change() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("doc.md");
+    fs::write(&path, "# hi\n").unwrap();
+    let mut document = Document::load(&path).unwrap();
+    fs::write(&path, "# changed externally\n").unwrap();
+    let error = document.save().unwrap_err();
+    assert!(matches!(error, SaveError::Conflict(_)), "{error:?}");
+    assert_eq!(fs::read(&path).unwrap(), b"# changed externally\n");
+}

@@ -788,7 +788,7 @@ impl Folio {
         let root_label = self
             .tree
             .root()
-            .map(|root| folio_core::util::display_path(root))
+            .map(folio_core::util::display_path)
             .unwrap_or_else(|| "No folder open".to_string());
 
         let header = div()

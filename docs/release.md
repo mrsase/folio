@@ -1,17 +1,18 @@
 # Release record — v0.1.0
 
 **Repository:** <https://github.com/mrsase/folio> (public, MIT)
-**Tag:** `v0.1.0`
+**Tag:** `v0.1.0` (pending)
+**Commit:** `ce6a80c` before release docs
 **Date:** 2026-11-21
 
 ## Gate results at the tagged commit
 
 | Gate | Result |
 | --- | --- |
-| `cargo fmt --all --check` | pending final run |
-| `cargo clippy --workspace --all-targets -- -D warnings` | pending |
-| `cargo test --workspace` | pending |
-| `cargo build --release --locked` | 7 m 30 s locally (thin LTO) |
+| `cargo fmt --all --check` | ✅ clean at `ce6a80c` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | core clean; workspace gate on CI |
+| `cargo test --workspace` | core 84/84 locally; workspace gate on CI |
+| `cargo build --release -p folio-app --locked` | ✅ 7 m 30 s locally (thin LTO), 26,888,020 bytes |
 | GitHub Actions `CI` | pending |
 | Data hygiene | no `target/`, session files, or `~/Library` content tracked |
 

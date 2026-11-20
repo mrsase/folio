@@ -48,13 +48,7 @@ pub fn render(this: &Folio, cx: &mut Context<Folio>) -> AnyElement {
         .map(|dir| folder_row(dir, &weak, selected_bg, muted, foreground))
         .unwrap_or_else(|| div().into_any_element());
 
-    let typed_file = typed_path_candidate(&query, root.as_deref()).filter(|path| {
-        path.is_file()
-            && !this
-                .palette
-                .as_ref()
-                .is_some_and(|palette| palette.selected_hit().is_some())
-    });
+    let typed_file = typed_path_candidate(&query, root.as_deref()).filter(|path| path.is_file());
     let typed_file_row = typed_file
         .as_ref()
         .map(|path| {

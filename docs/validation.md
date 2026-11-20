@@ -37,6 +37,12 @@ showed the `outside` badge. The path was resolved through the same normalizer as
 Markdown”; Escape cancelled it and the app stayed alive. Screenshot:
 taken during the run; no file was selected in that pass.
 
+A second run opened `~/workPlace/md-viewer-rs/docs/specimen.md` by typing its
+absolute path into `⌘P` while the root was an empty `/tmp/folio-outside`. The
+tab appeared with the `outside` badge and the banner “Outside root ·
+~/workPlace/…”; the tree stayed at its root with `FILES 0`. Screenshot:
+`outside-root.png`.
+
 ## 3. Create a file
 
 `⌘N` → typed `note` → `↩`.
@@ -121,8 +127,7 @@ top. Screenshot: `session-restore.png`.
 
 With a clean preview open, `## Live reload proof` was appended externally. The
 tab’s stats changed from 8 to 9 headings without a keystroke in the app, proving
-the watcher reloaded the document. Screenshot: `reload.png` (not copied; the
-stats line was read from the running window).
+the watcher reloaded the document. Screenshot: `reload.png`.
 
 ## 11. Checkbox write-back
 
@@ -131,6 +136,13 @@ rewrote only that marker. A grid of clicks produced alternating
 `[ ]`/`[x]` writes; the file remained valid UTF-8 with its BOM and CRLF endings.
 The core test `checkbox_writes_preserve_bom_and_crlf` covers the same path
 without GPUI.
+
+## 13. Non-UTF-8 refusal
+
+`caf\xe9\n` (Latin-1) was opened. The tab showed “not valid UTF-8 (byte 3:
+invalid utf-8 sequence of 1 bytes from index 3); convert the file to UTF-8 to
+edit it” and offered no editor. The bytes on disk were unchanged; `xxd` shows
+`6361 66e9 0a` (`caf` + 0xE9 + LF). Screenshot: `non-utf8.png`.
 
 ## Not validated in this pass
 

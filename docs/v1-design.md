@@ -49,7 +49,7 @@ Given a file anywhere on the machine, the user can reach it by all of:
 - `folio /path/to/file.md` on the command line.
 
 A file outside the tree root opens as a normal tab, visibly marked "outside
-root", with its full path on hover. Switching the root does not close it.
+root", with its full path shown in the document's outside-root banner. Switching the root does not close it.
 
 **Proof:** `docs/validation.md` steps, with a file under `~/workPlace/docs`
 opened while the launch root is `md-viewer-rs`; screenshot of the tab and tree.
@@ -125,7 +125,7 @@ Non-negotiable, with tests:
 5. **Limits.** 256 KiB preview cap; 2 MiB editable; 2–8 MiB read-only source;
    8–16 MiB preview-only; above 16 MiB refused. Checkbox writes allowed through
    the same path up to 8 MiB.
-6. **Checkbox write-back** works in preview and source, preserves `[X]` case,
+6. **Checkbox write-back** works in preview/read mode, preserves `[X]` case,
    and goes through the conflict-checked atomic write.
 
 **Proof:** the test table in ADR 0003, all green in `cargo test -p folio-core`

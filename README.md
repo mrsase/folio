@@ -34,7 +34,7 @@ The first launch shows a welcome screen; nothing is scanned in the background
 except the folder you open.
 
 ```sh
-cargo test -p folio-core       # 80 tests, no GPU required
+cargo test -p folio-core       # 84 tests, no GPU required
 cargo test --workspace         # includes the app shell
 ./scripts/package.sh 0.1.0     # unsigned Folio.app + zip in target/
 ```
@@ -96,8 +96,8 @@ Measured on macOS 14 (x64), 8 logical cores, release build unless stated.
 
 | Metric | Result |
 | --- | --- |
-| Source | 7,791 lines (core + app + tests), 80 automated tests |
-| Core tests | 80 pass (`cargo test -p folio-core`), 0.9 s |
+| Source | 7,791 lines (core + app + tests), 84 automated tests |
+| Core tests | 84 pass (`cargo test -p folio-core`), 0.9 s |
 | First frame, 2 KB document (debug build) | 802–1,089 ms |
 | First frame, release build | 3.1–4.1 s (measured under heavy machine load; debug was 0.8–1.1 s on a light load) |
 | Release binary | 26,888,020 bytes (25.6 MiB) |

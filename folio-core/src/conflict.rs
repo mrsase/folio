@@ -68,7 +68,9 @@ pub fn compare(recorded: Option<DiskStamp>, current: Option<&Metadata>) -> Optio
         (Some(_), None) => Some(Conflict::Deleted),
         (Some(recorded), Some(metadata)) => {
             let current = DiskStamp::of(metadata);
-            if recorded.ino != 0 && current.ino != 0 && recorded.ino != current.ino {
+            if (recorded.ino != 0 && current.ino != 0 && recorded.ino != current.ino)
+                || (recorded.dev != 0 && current.dev != 0 && recorded.dev != current.dev)
+            {
                 Some(Conflict::Replaced)
             } else if recorded.len != current.len || recorded.modified != current.modified {
                 Some(Conflict::Modified)

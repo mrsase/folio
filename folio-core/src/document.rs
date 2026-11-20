@@ -196,9 +196,9 @@ fn decode(bytes: &[u8]) -> Result<(Decoded, bool), LoadError> {
             Ending::Cr => cr += 1,
         }
     }
-    let dominant = if crlf >= lf && crlf >= cr && crlf > 0 {
+    let dominant = if crlf > lf && crlf >= cr {
         Ending::Crlf
-    } else if cr > lf && cr > 0 {
+    } else if cr > lf && cr > crlf {
         Ending::Cr
     } else {
         Ending::Lf
@@ -420,6 +420,11 @@ impl Document {
             return Err(SaveError::NotWritable);
         }
         if self.disk.is_some() && self.revision == self.saved_revision {
+            // Even a clean buffer must notice an external change at save time:
+            // the watcher may not have delivered the event yet.
+            if let Some(conflict) = self.conflict() {
+                return Err(SaveError::Conflict(conflict));
+            }
             return Ok(SaveOutcome::Unchanged);
         }
         if let Some(conflict) = self.conflict() {
@@ -460,6 +465,9 @@ impl Document {
             } else {
                 0o644
             });
+        if let Some(parent) = target.parent() {
+            let _ = atomic::remove_stale_temps(parent, std::time::Duration::from_secs(3600));
+        }
         let bytes = self.to_bytes();
         if existing.is_some() {
             atomic::write_atomic(&target, &bytes, mode)?;
@@ -467,6 +475,16 @@ impl Document {
             atomic::create_new_atomic(&target, &bytes, mode)?;
         }
         let metadata = fs::metadata(&target)?;
+        // The bytes just written are the new baseline for the next save's
+        // line-ending mapping. Without this, a second save diffs against the
+        // pre-save line structure and can rewrite untouched terminators.
+        if let Ok((decoded, bom)) = decode(&bytes) {
+            self.original_text = Some(decoded.text);
+            self.endings = decoded.endings;
+            self.dominant = decoded.dominant;
+            self.trailing_newline = decoded.trailing_newline;
+            self.bom = bom;
+        }
         self.path = target;
         self.mode = mode_of(&metadata);
         self.disk = Some(DiskStamp::of(&metadata));
@@ -584,6 +602,23 @@ mod tests {
         doc.apply_edit("a\nB\nc\n".into());
         doc.save().unwrap();
         assert_eq!(fs::read(&path).unwrap(), b"a\r\nB\nc\r\n");
+    }
+
+    #[test]
+    fn a_second_save_remaps_endings_against_the_new_baseline() {
+        let (_dir, path, mut doc) = load(b"a\r\nb\nc\r\nd\n");
+        doc.apply_edit("x\na\nb\nc\nd\n".into());
+        doc.save().unwrap();
+        let after_first = fs::read(&path).unwrap();
+        assert_eq!(after_first, b"x\na\r\nb\nc\r\nd\n");
+
+        doc.apply_edit("x\na\nb\nC\nd\n".into());
+        doc.save().unwrap();
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            b"x\na\r\nb\nC\r\nd\n",
+            "the untouched b line keeps its LF terminator"
+        );
     }
 
     #[test]

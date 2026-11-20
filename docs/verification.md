@@ -33,8 +33,9 @@ What is proven instead:
   --locked`, exit 0);
 - the current tree builds in release with the lockfile, using the existing
   `target/` (incremental, exit 0);
-- `vendor/gpui-pre-macos` is present, hashed in `Cargo.lock` via the path patch,
-  and committed.
+- `vendor/gpui-pre-macos` is present, wired through the path patch in
+  `Cargo.lock`, and committed. Path packages carry no checksum, so the commit
+  itself is the integrity record.
 
 What is **not** proven: that a machine with an empty `target/` and an empty
 Cargo registry cache can build the tree in one command. That proof is assigned
@@ -94,7 +95,7 @@ locally (see the resource note below).
 
 | Check | Command / evidence | Result |
 | --- | --- | --- |
-| Core tests | `cargo test -p folio-core` | **75 unit + 5 integration = 80**, 0 failed |
+| Core tests | `cargo test -p folio-core` | **77 unit + 7 integration = 84**, 0 failed |
 | App build | `cargo build -p folio-app` | ✅ exit 0, no warnings in the final run |
 | Format | `cargo fmt --all` | ✅ applied; `--check` is a CI gate |
 | Lint | `cargo clippy --workspace --all-targets -- -D warnings` | run in phase 6 / CI |
