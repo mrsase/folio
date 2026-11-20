@@ -18,9 +18,9 @@ are labelled as such.
 | Test time | 0.9 s | same |
 | Core compile/check | 2.5 s (`cargo clippy -p folio-core`) / 4.1 s test run | warm target |
 | App incremental build | 9–17 s | `cargo build -p folio-app` |
-| Release build | **7 m 30 s** | `cargo build --release -p folio-app --locked` (thin LTO, warm dependency cache) |
-| Release binary | **26,888,020 bytes (25.6 MiB)** | `stat -f %z target/release/folio-app` |
-| First frame, release | **3.1–4.1 s** | `FOLIO_TRACE=1 target/release/folio-app docs/specimen.md`, machine load 15–50 during measurement |
+| Release build | **7 m 30 s** first build; **2 m 19 s** app-only rebuild | `cargo build --release -p folio-app --locked` (thin LTO) |
+| Release binary | **26,929,828 bytes (25.7 MiB)** | `stat -f %z target/release/folio-app` |
+| First frame, release | **782–988 ms** (2 KB), **693 ms** (2 MiB preview), **986 ms** (2 MiB source) | `FOLIO_TRACE=1`, warm OS cache |
 | First frame, debug | 802–1,089 ms | same, debug |
 | Preview cap | 256 KiB | preserved PoC measurement |
 | Editable source cap | 2 MiB | policy |
@@ -63,7 +63,7 @@ are labelled as such.
 
 | Criterion | Verdict | Evidence |
 | --- | --- | --- |
-| A1 clean-clone build | conditional | CI `verify (macos)` must be green; local clean build stopped for resources |
+| A1 clean-clone build | go | CI run 44823618324 green from a clean checkout on `macos-latest`; clippy 6 m 43 s, tests 12 m 42 s, release build in the same 27 m 41 s job |
 | A2 open any file | go | CLI, `⌘O` panel, typed path, outside-root tab observed |
 | A3 open folder/root | go | palette path re-root; old tab retained |
 | A4 quick-open/recents | go | palette, typed folder, bounds/cancel tests |
@@ -72,7 +72,7 @@ are labelled as such.
 | A7 save safety | go | core tests + BOM/CRLF UI proof + conflict dialog |
 | A8 reader parity/session | go | tree/tabs/outline/find/palette/live reload/restore |
 | A9 settings | go with a stated limit | theme/font/root persist; settings controls driven; reduced motion inherited at init; live macOS appearance changes need a toggle/relaunch |
-| A10 ship | pending | repo, CI, tag, release, zip |
+| A10 ship | pending tag/release | repo and CI green; tag and release assets are the final step |
 
 **Verdict: GO for v0.1.0 only after CI is green on the tagged commit and the
 remaining manual checks (Save As completion, drag-drop, Finder reveal) are

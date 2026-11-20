@@ -1,5 +1,7 @@
 # Folio
 
+[![CI](https://github.com/mrsase/folio/actions/workflows/ci.yml/badge.svg)](https://github.com/mrsase/folio/actions/workflows/ci.yml)
+
 A native macOS Markdown reader and editor. One window, a real folder tree, tabs,
 a heading outline, find, fuzzy quick-open, live reload, and a source editor with
 a rendered preview. GPU-rendered with GPUI; no web view, no Electron, no
@@ -23,6 +25,16 @@ v0.1.0. The proof of concept remains readable at tag `poc-archive` (branch
 
 Requirements: macOS 14+, stable Rust (pinned in `rust-toolchain.toml`), Xcode
 command-line tools.
+
+Clean clone:
+
+```sh
+git clone https://github.com/mrsase/folio.git
+cd folio
+cargo build --release --locked
+```
+
+From the repository:
 
 ```sh
 cargo run --release -p folio-app            # restore the last session
@@ -99,9 +111,10 @@ Measured on macOS 14 (x64), 8 logical cores, release build unless stated.
 | Source | 7,929 lines (core + app + tests), 84 automated tests |
 | Core tests | 85 pass (`cargo test -p folio-core`), 0.9 s |
 | First frame, 2 KB document (debug build) | 802–1,089 ms |
-| First frame, release build | 3.1–4.1 s (measured under heavy machine load; debug was 0.8–1.1 s on a light load) |
-| Release binary | 26,888,020 bytes (25.6 MiB) |
-| Release build | 7 m 30 s locally (thin LTO, warm dependencies) |
+| First frame, release build | 782–988 ms (2 KB); 693 ms (2 MiB preview); 986 ms (2 MiB source) |
+| Release binary | 26,929,828 bytes (25.7 MiB) |
+| CI | 27 m 41 s on `macos-latest` (clean checkout, fmt + clippy + tests + release) |
+| Release build | 7 m 30 s first build; 2 m 19 s app-only rebuild |
 | Preview render cap | 256 KiB (the PoC's measured limit) |
 | Editable source | 2 MiB; read-only 2–8 MiB; preview-only 8–16 MiB |
 | Largest file accepted | 16 MiB (preview head); above that, refused |

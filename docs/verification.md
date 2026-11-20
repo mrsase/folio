@@ -127,3 +127,29 @@ The PoC's dependency graph was reused; only `folio-core` (a few seconds) and the
 app incremental link (5–17 s) were compiled repeatedly. A source-only clean
 build was started once and stopped deliberately at 6 m 41 s; CI is the clean-clone
 proof.
+
+## 2026-11-21 — Phase 6/7: final gates
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Format | `cargo fmt --all -- --check` | ✅ clean |
+| Core tests | `cargo test -p folio-core` | **78 unit + 7 integration = 85**, 0 failed, 0.8 s |
+| App build | `cargo build -p folio-app` | ✅ exit 0, no warnings |
+| Core lint | `cargo clippy -p folio-core --all-targets -- -D warnings` | ✅ clean |
+| Release build | `cargo build --release -p folio-app --locked` | ✅ 7 m 30 s first; 2 m 19 s app-only rebuild |
+| Release binary | `stat -f %z target/release/folio-app` | 26,929,828 bytes (25.7 MiB) |
+| Startup | `FOLIO_TRACE=1`, release | 782–988 ms (2 KB doc); 693 ms (2 MiB preview) |
+| Packaging | `./scripts/package.sh 0.1.0` | ✅ `target/Folio-0.1.0-macos.zip`, 11 MB, ad-hoc signed x86_64 |
+| Workspace gate | `cargo test --workspace`, clippy, release | ✅ CI [44823618324](https://github.com/mrsase/folio/actions/runs/44823618324) on `fcff2e5`: 27 m 41 s, all steps green |
+
+The first CI run failed on four clippy lints (two closures, one `contains`, one
+collapsible `if`, one boolean expression), all fixed in `d78dfa3`/`fcff2e5`.
+The second run was cancelled by the workflow's `cancel-in-progress` when the
+final commit arrived; the final run is the one referenced in `docs/release.md`.
+
+### Environment caveat
+
+The local machine was heavily loaded (load average 15–50) during part of the
+work, which made one release-startup sample 3.1–4.1 s. After the load dropped,
+the same binary measured 782–988 ms. The lower numbers are reported in the
+README; the loaded sample is not.

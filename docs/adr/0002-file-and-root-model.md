@@ -59,7 +59,7 @@ quick-open index. Open tabs are independent of the root.
 **Out-of-tree tabs:** a file opened by path that is not under the root stays
 open as a normal tab, labelled with enough of its path to disambiguate it (for
 example `big-blue / PLAN.md`), and marked with an "outside root" indicator plus
-the full path in the tooltip. The tree does not list it; "Open containing
+its full path in an outside-root banner. The tree does not list it; "Open containing
 folder" is the way to bring its folder into the tree. Saving it is unaffected by
 the root.
 
