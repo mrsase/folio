@@ -54,9 +54,10 @@ Saving:
 1. If `revision == saved_revision`, return `Ok(Unchanged)` without touching the
    disk. A clean file is byte-identical by construction.
 2. Build bytes: prepend `\xEF\xBB\xBF` when `bom`; for each line, emit its
-   original ending when that line is unchanged, otherwise the dominant ending
-   (common prefix/suffix line matching, so untouched head and tail lines keep
-   their exact terminators even in mixed-ending files); emit the final
+   original ending. When the line count is unchanged, endings map by position,
+   so editing a line's text never changes its terminator. When lines were
+   inserted or removed, common prefix/suffix line matching keeps untouched head
+   and tail lines exact and new lines use the dominant ending. Emit the final
    terminator exactly when the buffer ends with a newline. A clean buffer is
    never rewritten, so an untouched file keeps its original trailing-newline
    state; an edit that adds or removes the final newline is respected.

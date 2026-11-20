@@ -1,15 +1,20 @@
-[package]
-name = "folio"
+[workspace]
+members = ["folio-core", "folio-app"]
+resolver = "2"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
-description = "A blazing-fast native markdown reader for macOS, built with GPUI"
+license = "MIT"
+repository = "https://github.com/mrsase/folio"
+rust-version = "1.95"
 
-[dependencies]
-gpui-kit = { version = "0.10", features = ["syntect"] }
-markdown = "1.0"
+[workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+markdown = "1.0"
 notify = "8"
+tempfile = "3"
 
 [profile.dev]
 opt-level = 1
@@ -22,7 +27,8 @@ opt-level = 3
 lto = "thin"
 codegen-units = 4
 
-# gpui-pre-macos 0.3.12 calls `Option::map_or_default`, which is still
-# nightly-only on stable Rust. Vendored with the equivalent `map_or_else`.
+# gpui-pre-macos 0.3.12 calls `Option::map_or_default`, still nightly-only on
+# stable Rust. The vendored copy uses `map_or_else`. This patch is load-bearing:
+# removing it breaks the build on stable. See THIRD_PARTY_NOTICES.
 [patch.crates-io]
 gpui-pre-macos = { path = "vendor/gpui-pre-macos" }

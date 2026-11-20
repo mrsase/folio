@@ -1,19 +1,16 @@
-//! Small shared helpers: fuzzy matching for the quick-open palette and text
-//! formatting used in the chrome.
+//! Small shared helpers: fuzzy matching for quick-open and text formatting for
+//! the chrome. Ported from the proof of concept, with its tests.
 
-/// A fuzzy subsequence match with a ranking score and matched byte positions.
+/// A fuzzy subsequence match with a ranking score and matched character
+/// positions, for emphasis in the palette.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FuzzyMatch {
     pub score: i32,
-    /// Indices (in `char` units) of the candidate that matched, for emphasis.
     pub positions: Vec<usize>,
 }
 
 /// Case-insensitive subsequence match that rewards prefix, segment starts and
 /// consecutive runs. Returns `None` when the query is not a subsequence.
-///
-/// Deliberately allocation-free per candidate apart from the matched positions:
-/// the palette ranks thousands of paths per keystroke.
 pub fn fuzzy_match(query: &str, candidate: &str) -> Option<FuzzyMatch> {
     if query.is_empty() {
         return Some(FuzzyMatch {
@@ -39,7 +36,6 @@ pub fn fuzzy_match(query: &str, candidate: &str) -> Option<FuzzyMatch> {
         if ch != query[query_index] {
             continue;
         }
-        // Only pay for the segment-boundary check when it can matter.
         let boundary = index == 0
             || matches!(
                 candidate_chars[index - 1],
@@ -55,7 +51,6 @@ pub fn fuzzy_match(query: &str, candidate: &str) -> Option<FuzzyMatch> {
         if index == 0 {
             score += 40;
         }
-        // Matching the case exactly is a mild hint that this is the intended file.
         if *raw == query[query_index] {
             score += 4;
         }
@@ -65,7 +60,6 @@ pub fn fuzzy_match(query: &str, candidate: &str) -> Option<FuzzyMatch> {
     }
 
     if query_index == query.len() {
-        // Shorter candidates make for tighter matches.
         score -= (candidate_chars.len() as i32).min(200) / 4;
         Some(FuzzyMatch { score, positions })
     } else {
@@ -109,27 +103,11 @@ pub fn tab_label(path: &std::path::Path, ambiguous: bool) -> String {
     }
 }
 
-/// Strip CLI/GUI noise from a path for display: collapse the home directory.
+/// Strip CLI/GUI noise from a path for display: collapse the home directory and
+/// the `/private` prefix macOS reports for `/tmp`, `/var` and `/etc`.
 pub fn display_path(path: &std::path::Path) -> String {
-    // macOS reports canonical paths under `/private` for the well-known
-    // symlinked roots; people type and read the short form.
-    let mut short = path.to_path_buf();
-    if let Ok(rest) = path.strip_prefix("/private") {
-        let first = rest
-            .components()
-            .next()
-            .and_then(|component| component.as_os_str().to_str())
-            .unwrap_or_default();
-        if matches!(first, "tmp" | "var" | "etc") {
-            short = std::path::Path::new("/").join(rest);
-        }
-    }
-    if let Some(home) = std::env::var_os("HOME")
-        && let Ok(rest) = short.strip_prefix(&home)
-    {
-        return format!("~/{rest}", rest = rest.display());
-    }
-    short.display().to_string()
+    let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
+    crate::paths::display(path, home.as_deref())
 }
 
 #[cfg(test)]

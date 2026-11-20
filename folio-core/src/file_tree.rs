@@ -1,9 +1,8 @@
 //! Filesystem model for the sidebar browser.
 //!
-//! The tree is intentionally a *flat row list* rebuilt from the set of expanded
-//! directories. Collapsed directories are never scanned, so browsing a huge
-//! repository costs one `read_dir` per directory the user actually opened.
-//! A rebuild re-reads only expanded directories, which keeps live-refresh cheap.
+//! The tree is a flat row list rebuilt from the set of expanded directories.
+//! Collapsed directories are never scanned, so browsing a huge repository costs
+//! one `read_dir` per directory the user actually opened.
 
 use std::collections::HashSet;
 use std::fs;
@@ -21,20 +20,6 @@ pub fn is_markdown_path(path: &Path) -> bool {
                 .any(|known| known.eq_ignore_ascii_case(ext))
         })
 }
-
-/// Directories that are never worth walking during a content search.
-const SEARCH_SKIP_DIRS: [&str; 10] = [
-    "node_modules",
-    "target",
-    ".git",
-    ".hg",
-    ".svn",
-    "Library",
-    ".venv",
-    "venv",
-    "__pycache__",
-    "dist",
-];
 
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -58,8 +43,6 @@ pub struct FileTree {
     rows: Vec<Node>,
     show_hidden: bool,
     filter: String,
-    /// Set when the search's walk hit the entry cap.
-    pub truncated: bool,
 }
 
 impl FileTree {
@@ -122,7 +105,6 @@ impl FileTree {
         self.filter.clear();
     }
 
-    /// Re-read every expanded directory. Call after a filesystem change.
     pub fn refresh(&mut self) {
         self.rebuild();
     }
@@ -171,7 +153,6 @@ impl FileTree {
         if node.is_dir && node.expanded {
             let path = node.path.clone();
             self.set_expanded(&path, false);
-            // The row itself survives a collapse, so it is still the cursor.
             return self.index_of(&path);
         }
         let depth = node.depth;
@@ -238,7 +219,7 @@ impl FileTree {
         let Some(mut entries) = read_sorted(dir, self.show_hidden) else {
             return false;
         };
-        entries.retain(|entry| !should_skip(dir, &entry.path));
+        entries.retain(|entry| !should_skip(&entry.path));
 
         let mut kept_any = false;
         for entry in entries {
@@ -273,7 +254,7 @@ impl FileTree {
     }
 }
 
-fn should_skip(_dir: &Path, path: &Path) -> bool {
+fn should_skip(path: &Path) -> bool {
     path.file_name()
         .and_then(|name| name.to_str())
         .is_some_and(|name| name == ".DS_Store")
@@ -316,58 +297,8 @@ fn read_sorted(dir: &Path, show_hidden: bool) -> Option<Vec<Entry>> {
     Some(entries)
 }
 
-/// Result of a recursive content search.
-pub struct SearchHit {
-    pub path: PathBuf,
-    pub relative: String,
-}
-
-/// Recursively collect markdown files under `root` for the command palette.
-///
-/// Runs on a background thread; `limit` bounds the walk so a mistyped root
-/// can't stall the app. Hidden directories and build output are skipped.
-pub fn scan_markdown_files(root: &Path, limit: usize) -> (Vec<SearchHit>, bool) {
-    let mut hits = Vec::new();
-    let mut stack = vec![(root.to_path_buf(), 0usize)];
-    let mut truncated = false;
-    while let Some((dir, depth)) = stack.pop() {
-        if depth > 16 {
-            continue;
-        }
-        let Some(entries) = read_sorted(&dir, false) else {
-            continue;
-        };
-        for entry in entries {
-            if entry.is_dir {
-                let skipped = SEARCH_SKIP_DIRS
-                    .iter()
-                    .any(|name| name.eq_ignore_ascii_case(&entry.name));
-                if !skipped {
-                    stack.push((entry.path, depth + 1));
-                }
-            } else if is_markdown_path(&entry.path) {
-                if hits.len() >= limit {
-                    truncated = true;
-                    return (hits, truncated);
-                }
-                let relative = entry
-                    .path
-                    .strip_prefix(root)
-                    .unwrap_or(&entry.path)
-                    .to_string_lossy()
-                    .to_string();
-                hits.push(SearchHit {
-                    path: entry.path,
-                    relative,
-                });
-            }
-        }
-    }
-    hits.sort_by(|a, b| a.relative.cmp(&b.relative));
-    (hits, truncated)
-}
-
-/// Standard places offered in the sidebar so the app never needs a file dialog.
+/// Standard places offered in the sidebar so the app never needs a file dialog
+/// to reach the obvious folders.
 pub fn places() -> Vec<(&'static str, PathBuf)> {
     let home = std::env::var_os("HOME").map(PathBuf::from);
     let Some(home) = home else {
@@ -465,21 +396,6 @@ mod tests {
         let row = tree.reveal(&root.join("a/b/c/target.md")).unwrap();
         assert_eq!(tree.row(row).unwrap().name, "target.md");
         assert_eq!(tree.row(row).unwrap().depth, 3);
-        fs::remove_dir_all(root).ok();
-    }
-
-    #[test]
-    fn scan_finds_markdown_and_skips_build_output() {
-        let root = tempdir("scan");
-        touch(&root.join("one.md"));
-        touch(&root.join("sub/two.markdown"));
-        touch(&root.join("node_modules/dep/readme.md"));
-        touch(&root.join("sub/notes.txt"));
-
-        let (hits, truncated) = scan_markdown_files(&root, 100);
-        let names: Vec<_> = hits.iter().map(|h| h.relative.as_str()).collect();
-        assert_eq!(names, vec!["one.md", "sub/two.markdown"]);
-        assert!(!truncated);
         fs::remove_dir_all(root).ok();
     }
 

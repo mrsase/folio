@@ -52,13 +52,36 @@ only if the maintainer asks for one. It will not be claimed before then.
 
 These are the reasons for ADR 0003 and are covered by its required tests.
 
-## Provisional gates for the rebuild
+## 2026-11-20 — Phase 1: workspace and `folio-core`
+
+**Scope:** workspace, pure-Rust core, ported PoC tests, new byte-safety modules.
+No GPUI code was compiled; `folio-app` is an inert binary for now.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Core unit tests | `cargo test -p folio-core` | **75 passed**, 0 failed |
+| Core integration tests | same | **5 passed**, 0 failed (create/save/save-as/overwrite/refusal) |
+| Total for this phase | same | **80 tests**, 0.7 s |
+| Lint | `cargo clippy -p folio-core --all-targets -- -D warnings` | ✅ 0 warnings |
+| Format | `cargo fmt --all --check` | ✅ clean |
+| Toolchain | `rust-toolchain.toml` | `1.95.0` installed and building |
+| GPUI compile cost | — | avoided; only `folio-core` was built |
+
+PoC tests ported: file tree (4; the recursive scan case moved to
+`index::tests`), outline (5; checkbox cases moved to `checkbox::tests`),
+session (4 original cases, extended), util (6), display slicing and find (4),
+palette (2). New coverage: encoding/BOM/newline round-trips, atomic failure
+ordering, mode preservation, conflict classification, checkbox encoding
+preservation, path expansion/canonicalization, ignore rules/caps/cancellation,
+recents MRU/pruning, versioned session migration, size policies.
+
+### Provisional gates for the remaining phases
 
 | Gate | Status |
 | --- | --- |
-| `cargo fmt --all --check` | not yet applicable (workspace not created) |
-| `cargo clippy --workspace --all-targets -- -D warnings` | not yet applicable |
-| `cargo test --workspace` | not yet applicable |
+| `cargo fmt --all --check` | ✅ for the current tree |
+| `cargo clippy --workspace --all-targets -- -D warnings` | core clean; workspace not yet built (GPUI) |
+| `cargo test --workspace` | core green; app tests not written |
 | `cargo build --release --locked` | proven on the PoC tree only |
 | CI green on `main` | workflow not yet written |
 | Clean-clone build | deferred to CI (see above) |
