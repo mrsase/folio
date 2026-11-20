@@ -103,6 +103,9 @@ impl Default for Session {
 
 impl Session {
     pub fn store_path() -> Option<PathBuf> {
+        if let Some(dir) = std::env::var_os("FOLIO_SESSION_DIR") {
+            return Some(PathBuf::from(dir).join("session.json"));
+        }
         let home = std::env::var_os("HOME")?;
         Some(
             PathBuf::from(home)

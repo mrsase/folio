@@ -346,6 +346,12 @@ impl Document {
         result
     }
 
+    /// Mark the buffer edited without replacing it. Used when a byte-level
+    /// checkbox edit already changed `text`.
+    pub fn bump_revision(&mut self) {
+        self.revision += 1;
+    }
+
     pub fn task_counts(&self) -> (usize, usize) {
         checkbox::count_tasks(&self.text)
     }

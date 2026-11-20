@@ -1,0 +1,31 @@
+# Third-party notices
+
+Folio's original code is MIT-licensed (see `LICENSE`). It depends on the
+following, whose licenses remain in force.
+
+## GPUI Kit and the GPUI family
+
+- `gpui-kit`, `gpui-base`, `gpui-component`, `gpui-kit-assets` 0.10 —
+  Apache-2.0, <https://github.com/longbridge/gpui-kit>
+- `gpui`, `gpui-pre-*` 0.3.12 — Apache-2.0, <https://github.com/zed-industries/zed>
+
+`vendor/gpui-pre-macos` is a copy of the crates.io `gpui-pre-macos` 0.3.12
+source (Apache-2.0; its license file is included in the vendored directory).
+Three `Option::map_or_default` calls were replaced with
+`map_or_else(Default::default, …)` because the method is nightly-only and
+`gpui-kit` 0.10 pins that release. The patch is wired in `[patch.crates-io]` at
+the workspace root. Removing it breaks the build on stable Rust; the vendored
+copy is intentionally committed.
+
+## Other direct dependencies
+
+| Crate | License | Use |
+| --- | --- | --- |
+| `markdown` | MIT | CommonMark/GFM parsing for the outline |
+| `serde`, `serde_json` | MIT OR Apache-2.0 | Session and document metadata |
+| `notify` | CC0-1.0 | Filesystem watcher |
+| `tempfile` (dev) | MIT OR Apache-2.0 | Integration tests |
+
+Transitive dependencies and their exact versions are recorded in `Cargo.lock`.
+Their licenses are the ones published by their authors; this notice does not
+relicense them.

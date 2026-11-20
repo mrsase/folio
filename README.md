@@ -1,152 +1,152 @@
 # Folio
 
-A native markdown reader for macOS, built in Rust on [GPUI Kit](https://gpui-kit.com)
-(GPUI + `gpui-base` + `gpui-component`). GPU-rendered, no web view, no Electron.
+A native macOS Markdown reader and editor. One window, a real folder tree, tabs,
+a heading outline, find, fuzzy quick-open, live reload, and a source editor with
+a rendered preview. GPU-rendered with GPUI; no web view, no Electron, no
+telemetry.
 
-Folio is to markdown what a spreadsheet app is to CSV: the tool you reach for
-when you actually have to *read* the thing — a real file browser instead of the
-macOS open panel, tabs, live reload, a heading outline, and in-document search.
+![Folio reading a document](docs/screenshots/reader-light.png)
 
-## Running it
+## What it is for
+
+Folio is for people who keep Markdown in folders and read or edit it every day:
+notes, ADRs, runbooks, specifications. It opens any file or folder on the
+machine, keeps the ones you use in a session, and saves without changing bytes
+you did not edit.
+
+## Status
+
+v0.1.0. The proof of concept remains readable at tag `poc-archive` (branch
+`poc`); the product is a workspace with a pure-Rust core and a GPUI app.
+
+## Build and run
+
+Requirements: macOS 14+, stable Rust (pinned in `rust-toolchain.toml`), Xcode
+command-line tools.
 
 ```sh
-cargo run --release            # opens the last session, or $HOME
-cargo run --release -- .       # opens this repository as the root
-cargo run --release -- docs/specimen.md
+cargo run --release -p folio-app            # restore the last session
+cargo run --release -p folio-app -- .       # open this folder
+cargo run --release -p folio-app -- docs/specimen.md
 ```
 
-The window geometry, root folder, open tabs, active document, sidebar width and
-theme are restored on launch
-(`~/Library/Application Support/Folio/session.json`).
+The first launch shows a welcome screen; nothing is scanned in the background
+except the folder you open.
+
+```sh
+cargo test -p folio-core       # 80 tests, no GPU required
+cargo test --workspace         # includes the app shell
+./scripts/package.sh 0.1.0     # unsigned Folio.app + zip in target/
+```
+
+The packaged app is ad-hoc signed only. macOS will quarantine a downloaded zip;
+if Gatekeeper refuses it:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Folio.app
+open /Applications/Folio.app
+```
+
+There is no Developer ID signature or notarization. Build from source if you
+prefer not to bypass Gatekeeper.
 
 ## Keyboard
 
 | Shortcut | Action |
 | --- | --- |
-| `⌘P` / `⌘⇧O` | Quick open: fuzzy search every markdown file under the root |
-| type `/…` or `~/…` in quick open | Open that folder as the new root (no file dialog) |
-| `↑` `↓` | Move in the file tree / in quick open |
-| `→` / `←` | Expand / collapse a folder |
-| `↩` | Open the selected row |
-| `⌘B` | Show / hide the file browser |
-| `⌘⇧B` | Show / hide the heading outline |
-| `⌘F`, `⌘G`, `⌘⇧G` | Find, next match, previous match (all matches highlighted) |
-| `⌘W` | Close the active tab |
-| `⌘⇧]` / `⌘⇧[`, `⌘1` / `⌘9` | Next / previous / first / last tab |
-| `⌘R` | Reload the active document from disk |
+| `⌘O` / `⇧⌘O` | Open file / open folder |
+| `⌘N` | New Markdown file |
+| `⌘P` | Quick open: fuzzy files, or type an absolute / `~/` / relative path |
+| `⌘E` | Toggle Source / Preview |
+| `⌘S` / `⇧⌘S` | Save / Save As |
+| `⌘F`, `⌘G`, `⇧⌘G` | Find, next, previous (find-only) |
+| `⌘B` / `⇧⌘B` | Sidebar / outline |
 | `⌘⇧L` | Toggle light / dark |
 | `⌘⇧.` | Show hidden files |
-| `esc` | Dismiss quick open or the find bar |
+| `⌘R` | Reload from disk |
+| `⌘W` | Close tab (guarded when dirty) |
+| `⌘⇧]` / `⌘⇧[`, `⌘1` / `⌘9` | Next / previous / first / last tab |
+| `⌘,` | Settings |
+| `⌘⇧R` / `⌘⇧F` | Reveal in Finder / open containing folder |
+| `⌘Q` | Quit (guarded when dirty) |
 
-Clicking a task list checkbox rewrites that marker in the file.
+Editor-native selection, `⌘Z` / `⇧⌘Z`, copy/cut/paste and `⌘A` come from the
+shared input engine.
 
-## What it renders
+## Saving
 
-Markdown is parsed and laid out by `gpui-base`'s `TextView`, so Folio inherits a
-real block layout engine rather than a pile of styled labels:
+- Files are read as UTF-8 only. A UTF-16 or invalid UTF-8 file opens with the
+  reason and is never editable.
+- A UTF-8 BOM, LF/CRLF/CR endings, mixed-ending head and tail lines, and the
+  presence of a trailing newline are preserved. Untouched lines keep their exact
+  terminators; new lines use the dominant ending.
+- Writes go to a sibling temp file, are fsynced, keep the original mode, and are
+  renamed over the target; the parent directory is fsynced. A failure before the
+  rename leaves the original untouched.
+- At save, `(dev, ino, size, mtime)` is compared with the stamp taken at load.
+  If the file changed while the buffer was dirty, Folio stops and offers Reload
+  / Overwrite / Save As / Cancel. A clean file reloads automatically.
+- Dirty tabs are guarded on close and quit. Switching roots never closes tabs,
+  so unsaved work survives a re-root.
+- Task checkboxes write through the same path, changing one marker byte.
 
-- CommonMark + GFM: headings, emphasis, strikethrough, tables, task lists,
-  autolinks, block quotes, nested lists.
-- Syntax-highlighted fenced code (syntect, ~200 languages via `two-face`).
-- Tables with header styling and hover rows.
-- YAML/TOML frontmatter as a metadata card (simple scalar values; compound YAML
-  falls back to a YAML code block).
-- Images resolved relative to the document; remote image URLs go through GPUI's
-  loader.
-- Selectable text (`⌘C` copies exactly what is on screen), `#anchor` links
-  resolve to headings, relative `.md` links open in a new tab.
+## Measured behaviour
 
-## Verified behaviour
+Measured on macOS 14 (x64), 8 logical cores, release build unless stated.
 
-Everything below was exercised against the running app, not inferred:
+| Metric | Result |
+| --- | --- |
+| Source | 7,756 lines (core + app + tests), 80 automated tests |
+| Core tests | 80 pass (`cargo test -p folio-core`), 0.9 s |
+| First frame, 2 KB document (debug build) | 802–1,089 ms |
+| First frame, 2 KB document (release build) | _measured in `docs/evaluation.md`_ |
+| Release binary | _measured in `docs/evaluation.md`_ |
+| Preview render cap | 256 KiB (the PoC's measured limit) |
+| Editable source | 2 MiB; read-only 2–8 MiB; preview-only 8–16 MiB |
+| Largest file accepted | 16 MiB (preview head); above that, refused |
 
-- file tree over the real filesystem (lazy expansion, filter, hidden-file
-  toggle, keyboard navigation, selection follows the open document);
-- session restore of two tabs with disambiguated labels, tab close, tab switch;
-- outline panel, find bar with match count and highlights, quick open with
-  background scan and fuzzy ranking, folder switch by typing a path;
-- task checkbox click → marker rewritten on disk; external edit → document and
-  tree refresh within ~300 ms;
-- light and dark themes, macOS menu bar, traffic lights, window geometry
-  restore.
+The full numbers, the build time and the go/no-go are in
+[`docs/evaluation.md`](docs/evaluation.md).
+
+## Limits
+
+- macOS only.
+- Source editor, not WYSIWYG; no split view, print/PDF, plugins, sync, iOS,
+  multiple windows, or full-text search across a home directory.
+- No notarization or Developer ID signing.
+- 256 KiB of a large document is rendered and outlined; the rest is kept for saving.
+- Above 512 KiB the source editor uses plain text instead of Markdown highlighting so the window stays responsive.
+- Mixed line endings are preserved on untouched lines; edited/new lines use the
+  dominant ending.
+- Extended attributes (Finder tags, quarantine) and ACLs are not copied to the
+  replacement inode.
+- Quick-open indexes names only, bounded to depth 12, 50,000 entries, 20,000
+  results and 3 seconds; it never follows symlinked directories.
 
 ## Architecture
 
 ```
-src/
-  main.rs        window, theme, menu bar, key bindings
-  app.rs         the single stateful view (browser, tabs, reader, outline, palette, find)
-  model.rs       OpenDoc / Find / Palette — no GPUI types
-  lib.rs         file_tree, outline, session, util (headless, unit-tested)
-  file_tree.rs   lazy, flattened filesystem tree + recursive markdown scan
-  outline.rs     mdast heading extraction, task checkbox edits, link resolution
-  session.rs     atomic JSON persistence
-  util.rs        fuzzy matching, tab labels, path display
+folio-core/   documents, encoding/newlines, atomic writes, conflicts,
+              checkbox bytes, paths, tree, index, recents, session, find
+folio-app/    GPUI window, views, menus, shortcuts, editor, dialogs
+vendor/gpui-pre-macos/  stable-Rust patch for gpui-pre-macos 0.3.12
 ```
 
-Design decisions worth knowing:
+`folio-core` has no GPUI dependency, so the byte-level contract is tested
+without a window server. The app has one stateful view; views are plain
+functions over that state. The PoC's single 1,902-line `app.rs` was not carried
+forward.
 
-- **One stateful view.** `Folio` owns all state; child UI is rebuilt from it each
-  frame, so invalidation is a single `cx.notify()` and there is no entity graph
-  to keep consistent.
-- **Collapsed directories are never read.** The tree is a flat row vector
-  rebuilt from the set of expanded paths, so browsing a monorepo costs one
-  `read_dir` per directory you actually opened.
-- **One parse per document, not per frame.** Each tab owns an
-  `Entity<TextViewState>`, so repainting reuses the parsed document, layout and
-  selection; a reload only re-parses when bytes actually changed.
-- **Window appears before documents load.** Files queued from the CLI or the
-  session open on the first frame, so a slow file can never leave a blank
-  window.
-- **Virtualized rows** for the tree and quick open (`uniform_list`), with
-  scroll-follow for keyboard selection.
-- **Background work off the UI thread:** quick-open scans, task writes, and the
-  filesystem watcher (a 300 ms fold into one update rather than a repaint per
-  event).
-- **Bounded layout.** The layout engine is fed at most the first 256 KB of a
-  document, cut at a paragraph boundary, with a notice appended; the full text
-  is kept for writes. Uncapped, a 2 MB file pushed `TextView` layout into
-  multi-second stalls and >1 GB of retained layout state.
+`vendor/gpui-pre-macos` replaces three nightly-only `Option::map_or_default`
+calls with `map_or_else`. It is wired through `[patch.crates-io]`; removing it
+breaks stable builds when the dependency graph is resolved again.
 
-## Performance
+## Proof of concept
 
-Measured on this machine (release build, 2 KB doc unless noted):
+Tag `poc-archive` and branch `poc` contain the reader-only Folio, including its
+30 tests, for comparison and porting. It is not built by the workspace.
 
-| Metric | Result |
-| --- | --- |
-| Process start → first frame, first launch after a build | 1520 ms |
-| Process start → first frame, warm | 747–894 ms |
-| Open 12 KB document (read + parse) | <1 ms + <1 ms |
-| Open 2 MB document (read, slice, outline the head) | 605 ms |
-| Memory, empty reader | 69 MB |
-| Memory, 256 KB document | 252 MB |
-| Memory, 2 MB document, uncapped | 1.3 GB and still laying out — why the cap exists |
+## License
 
-Build time from scratch with `jobs = 6`: 12m49s for the full dependency tree plus
-thin LTO (release profile).
-
-## Development
-
-```sh
-cargo test --lib         # headless model tests
-cargo test --bin folio   # app model tests
-cargo build --release
-FOLIO_TRACE=1 ./target/release/folio docs/specimen.md   # startup/parse timings on stderr
-```
-
-`.cargo/config.toml` sets `jobs = 6`.
-
-`vendor/gpui-pre-macos` is a copy of the crates.io release with three
-`Option::map_or_default` calls replaced by `map_or_else(Default::default, …)`:
-that method is still nightly-only, and `gpui-kit` 0.10 pins `gpui-pre-macos`
-0.3.12. The patch is wired in `[patch.crates-io]`. Without it the stack does not
-compile on stable.
-
-## Limits
-
-- macOS only; the tree, shortcuts and window chrome are tuned for it.
-- Read-only except task list checkboxes.
-- Documents over 256 KB render their head plus a notice.
-- No split view, printing or PDF export in this version.
-- A file that is not valid UTF-8 opens a tab that explains why instead of
-  rendering garbage.
+MIT for Folio's original code. The vendored GPUI snapshot and dependencies are
+attributed in [`THIRD_PARTY_NOTICES`](THIRD_PARTY_NOTICES).

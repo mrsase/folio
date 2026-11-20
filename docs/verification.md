@@ -85,3 +85,44 @@ recents MRU/pruning, versioned session migration, size policies.
 | `cargo build --release --locked` | proven on the PoC tree only |
 | CI green on `main` | workflow not yet written |
 | Clean-clone build | deferred to CI (see above) |
+
+## 2026-11-21 — Phase 2–5: app shell, editor, open/new, settings
+
+**Build:** `cargo build -p folio-app` exits 0. Incremental builds after the
+dependency graph was warm took 5–17 s; no clean dependency build was repeated
+locally (see the resource note below).
+
+| Check | Command / evidence | Result |
+| --- | --- | --- |
+| Core tests | `cargo test -p folio-core` | **75 unit + 5 integration = 80**, 0 failed |
+| App build | `cargo build -p folio-app` | ✅ exit 0, no warnings in the final run |
+| Format | `cargo fmt --all` | ✅ applied; `--check` is a CI gate |
+| Lint | `cargo clippy --workspace --all-targets -- -D warnings` | run in phase 6 / CI |
+| First frame, debug | `FOLIO_TRACE=1`, 2 KB document | 802–1089 ms across runs |
+| Native panels | `⌘O`, `⇧⌘S` | NSOpenPanel/NSSavePanel appeared; Escape cancels without a crash |
+| UI evidence | `docs/screenshots/` | reader dark/light, source editor, new file, conflict, quit guard, settings, palette, find, outline, session restore, live reload |
+
+**Manual observations** (full detail in `docs/validation.md`):
+
+- opening a folder by typed palette path re-rooted the tree and kept the old
+  tab, marked `outside`;
+- editing a BOM+CRLF file and pressing `⌘S` preserved the BOM and every CRLF;
+- an external change while dirty produced the conflict dialog and no write;
+- dirty close/quit produced the guards; clean quit exited;
+- session restore brought back root, tabs, mode, theme and scroll;
+- `⌘E` switched Source/Preview; `⌘F`, `⌘⇧B`, `⌘P` rendered;
+- checkbox clicks rewrote only the marker and preserved BOM/CRLF;
+- an external append changed the preview's heading count from 8 to 9.
+
+**Not yet proven:** clean-clone build (CI), release-build startup and binary
+size (phase 6), Save As completion through the native panel (core integration
+test covers the write), drag-and-drop and Finder reveal (wired, not clicked),
+>2 MiB editing latency.
+
+### Resource constraint
+
+The maintainer asked to avoid unnecessary compiles on a low-resource machine.
+The PoC's dependency graph was reused; only `folio-core` (a few seconds) and the
+app incremental link (5–17 s) were compiled repeatedly. A source-only clean
+build was started once and stopped deliberately at 6 m 41 s; CI is the clean-clone
+proof.

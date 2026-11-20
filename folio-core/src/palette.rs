@@ -97,7 +97,11 @@ impl Palette {
     /// current root. Used to re-root without a native dialog.
     pub fn folder_candidate_in(&self, root: Option<&Path>) -> Option<PathBuf> {
         let query = self.query.trim();
-        if query.is_empty() || !crate::paths::looks_like_path(query) {
+        if query.is_empty() {
+            return None;
+        }
+        let relative_existing = root.map(|root| root.join(query).is_dir()).unwrap_or(false);
+        if !crate::paths::looks_like_path(query) && !relative_existing {
             return None;
         }
         let home = std::env::var_os("HOME").map(PathBuf::from);
@@ -179,7 +183,10 @@ mod tests {
         std::fs::create_dir(dir.path().join("docs")).unwrap();
         let mut palette = Palette::new();
         palette.set_query("docs");
-        assert!(palette.folder_candidate_in(Some(dir.path())).is_none());
+        assert_eq!(
+            palette.folder_candidate_in(Some(dir.path())),
+            Some(std::fs::canonicalize(dir.path().join("docs")).unwrap())
+        );
         palette.set_query("docs/");
         assert_eq!(
             palette.folder_candidate_in(Some(dir.path())),
