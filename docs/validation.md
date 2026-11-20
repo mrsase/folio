@@ -103,9 +103,10 @@ top. Screenshot: `session-restore.png`.
   `"theme": "light"`. Screenshots: `reader-dark.png`, `reader-light.png`.
 - A session with `"font_size": 24` rendered the preview at 24 pt; `"font_size":
   20` rendered the editor at 20 pt. Both are visibly larger than the 16 pt
-  default. The settings panel exposes the same values
-  (`settings.png`); the theme shortcut was driven, the inline controls were
-  inspected but not all clicked in this pass.
+  default.
+- In the settings panel, clicking **Light** changed `"theme"` to `"light"` and
+  clicking **+** changed `"font_size"` to `17.0`; both were read back from the
+  session file. Screenshot: `settings-light.png`.
 
 ## 9. Find, outline, palette
 
@@ -145,3 +146,20 @@ without GPUI.
 - Reduced motion with the macOS switch toggled (the framework reads it at init;
   no app-owned animation exists to observe).
 - Files above 2 MiB in the editor (policy tested; typing latency not measured).
+
+## 12. Large file and read-only degradation
+
+A 2,097,099-byte Markdown file (repeated headings, prose and task items) was
+opened in preview mode.
+
+**Observed:** the window appeared with a first frame at **1,645–1,723 ms**
+(debug build), the preview banner “Preview limited to the first 256 KiB; the
+full file is kept for saving”, and `0 headings` because the outline is capped
+at 256 KiB. Clicking the mode chip created the source editor with plain text
+(no syntect highlighting) and 2,097,099 bytes of content; the app stayed
+responsive enough to paint line numbers and the first lines. Screenshot:
+`large-file.png`.
+
+This is the largest file the editor accepts by policy. Typing latency at 2 MiB
+was not instrumented in this pass; the byte cap is enforced and documented, not
+claimed as a speed result.

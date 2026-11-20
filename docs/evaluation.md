@@ -11,22 +11,25 @@ are labelled as such.
 
 | Metric | Value | How |
 | --- | --- | --- |
-| Source (core + app + tests) | **7,756 lines** | `wc -l folio-core/src/*.rs folio-core/tests/*.rs folio-app/src/*.rs folio-app/src/views/*.rs` |
+| Source (core + app + tests) | **7,791 lines** | `wc -l folio-core/src/*.rs folio-core/tests/*.rs folio-app/src/*.rs folio-app/src/views/*.rs` |
 | `folio-core` | 3,364 lines | same, core only |
 | `folio-app` | 4,309 lines | same, app only |
 | Automated tests | **80** (75 unit + 5 integration) | `cargo test -p folio-core` |
 | Test time | 0.9 s | same |
-| Core compile time | _measured_ | `cargo test -p folio-core` from a warm target |
+| Core compile/check | 2.5 s (`cargo clippy -p folio-core`) / 4.1 s test run | warm target |
 | App incremental build | 9–17 s | `cargo build -p folio-app` |
-| Release build | _measured_ | `cargo build --release -p folio-app --locked` |
-| Release binary | _measured_ | `ls -lh target/release/folio-app` |
-| First frame, release | _measured_ | `FOLIO_TRACE=1 target/release/folio-app docs/specimen.md` |
+| Release build | **7 m 30 s** | `cargo build --release -p folio-app --locked` (thin LTO, warm dependency cache) |
+| Release binary | **26,888,020 bytes (25.6 MiB)** | `stat -f %z target/release/folio-app` |
+| First frame, release | **3.1–4.1 s** | `FOLIO_TRACE=1 target/release/folio-app docs/specimen.md`, machine load 15–50 during measurement |
 | First frame, debug | 802–1,089 ms | same, debug |
 | Preview cap | 256 KiB | preserved PoC measurement |
 | Editable source cap | 2 MiB | policy |
 | Largest accepted file | 16 MiB (preview head) | policy; above refused |
-| Largest editable file | 2 MiB | policy; typing latency measured below |
+| Largest editable file | **2,097,099 bytes accepted** | opened in Source; plain text above 512 KiB |
+| First frame, 2 MiB preview (debug) | 1,645–1,723 ms | `FOLIO_TRACE=1` |
+| Outline cap | 256 KiB | skipped above the preview cap |
 | Memory | _not measured for the new app_ | — |
+| Typing latency at 2 MiB | _not instrumented_ | honest gap |
 
 ## What is strong
 

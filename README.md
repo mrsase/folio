@@ -96,11 +96,12 @@ Measured on macOS 14 (x64), 8 logical cores, release build unless stated.
 
 | Metric | Result |
 | --- | --- |
-| Source | 7,756 lines (core + app + tests), 80 automated tests |
+| Source | 7,791 lines (core + app + tests), 80 automated tests |
 | Core tests | 80 pass (`cargo test -p folio-core`), 0.9 s |
 | First frame, 2 KB document (debug build) | 802–1,089 ms |
-| First frame, 2 KB document (release build) | _measured in `docs/evaluation.md`_ |
-| Release binary | _measured in `docs/evaluation.md`_ |
+| First frame, release build | 3.1–4.1 s (measured under heavy machine load; debug was 0.8–1.1 s on a light load) |
+| Release binary | 26,888,020 bytes (25.6 MiB) |
+| Release build | 7 m 30 s locally (thin LTO, warm dependencies) |
 | Preview render cap | 256 KiB (the PoC's measured limit) |
 | Editable source | 2 MiB; read-only 2–8 MiB; preview-only 8–16 MiB |
 | Largest file accepted | 16 MiB (preview head); above that, refused |
@@ -140,6 +141,21 @@ forward.
 `vendor/gpui-pre-macos` replaces three nightly-only `Option::map_or_default`
 calls with `map_or_else`. It is wired through `[patch.crates-io]`; removing it
 breaks stable builds when the dependency graph is resolved again.
+
+## Roadmap
+
+Each of these is deferred for a reason, not forgotten.
+
+| Item | Why it is not in 0.1.0 |
+| --- | --- |
+| WYSIWYG editing | A Markdown serializer that round-trips every GFM construct is a project of its own and the main way documents get corrupted (ADR 0001). |
+| Split view | Doubles layout, scroll and find state; the Source/Preview toggle covers the need at a fraction of the risk. |
+| Print / PDF | Needs pagination outside GPUI's renderer; not a reading/editing requirement. |
+| Plugins | No ABI, sandbox or versioning; a security surface with no v1 user. |
+| Sync / cloud | Conflicts, accounts and encryption; the product is local-first. |
+| Multiple windows | Session, watchers, menus and quit guards become per-window state (ADR 0002). |
+| Full-home search | Expensive and privacy-sensitive; quick-open indexes names, not contents. |
+| Notarization | Requires a paid Developer ID. |
 
 ## Proof of concept
 

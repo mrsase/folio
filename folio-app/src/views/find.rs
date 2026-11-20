@@ -1,5 +1,5 @@
-//! Find bar. Works on the rendered text in preview; the source editor uses the
-//! same bar in phase 3.
+//! Find bar. Works on the rendered text in preview and on the source buffer in
+//! the editor.
 
 use crate::state::Folio;
 use gpui_kit::component::input::Input;
